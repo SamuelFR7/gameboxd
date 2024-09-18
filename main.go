@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"time"
@@ -167,12 +168,18 @@ func main() {
 		return
 	}
 
-	limit := 500
-	offset := 0
-	lastTime := time.Now().Add(-250 * 1e6)
-	total := -1
+	if dbCount > apiCount {
+		panic("Something went wrong")
+	}
 
-	for offset < total {
+	missingGamesQt := apiCount - dbCount
+	limit := 500
+	callsUntilFinish := int(math.Ceil(float64(missingGamesQt) / float64(limit)))
+
+	offset := dbCount
+	lastTime := time.Now().Add(-250 * 1e6)
+
+	for i := 0; i < callsUntilFinish; i++ {
 		executionDuration := time.Since(lastTime).Milliseconds()
 		if executionDuration < 250 {
 			difference := 250 - executionDuration
