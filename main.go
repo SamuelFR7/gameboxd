@@ -37,6 +37,10 @@ type EnvVars struct {
 	DATABASE_HOST     string
 }
 
+type CountResponse struct {
+	Count int `json:"count" db:"count"`
+}
+
 func loadEnv() EnvVars {
 	err := godotenv.Load()
 	if err != nil {
@@ -77,34 +81,71 @@ func getAuthToken(twitchClientId, twitchSecret string) AuthResponse {
 }
 
 func getGames(limit, offset int, accessToken, clientId string, httpClient *http.Client) []Game {
-    	jsonString := fmt.Sprintf("fields id, name, slug; sort id asc; limit %d; offset %d;", limit, offset)
-		jsonBytes := []byte(jsonString)
-		req, err := http.NewRequest("POST", "https://api.igdb.com/v4/games", bytes.NewBuffer(jsonBytes))
-		if err != nil {
-			log.Fatalln(err)
-		}
-		req.Header.Set("Client-ID", clientId)
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-		req.Header.Set("Accept", "application/json")
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	jsonString := fmt.Sprintf("fields id, name, slug; sort id asc; limit %d; offset %d;", limit, offset)
+	jsonBytes := []byte(jsonString)
+	req, err := http.NewRequest("POST", "https://api.igdb.com/v4/games", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	req.Header.Set("Client-ID", clientId)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	req.Header.Set("Accept", "application/json")
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-		gamesResponse := []Game{}
+	gamesResponse := []Game{}
 
-		err = json.Unmarshal(body, &gamesResponse)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	err = json.Unmarshal(body, &gamesResponse)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-        return gamesResponse
+	return gamesResponse
+}
+
+func getTotalGamesDb(db *sqlx.DB) int {
+	countResponse := CountResponse{}
+	db.Get(&countResponse, "SELECT count(id) FROM games")
+
+	return countResponse.Count
+}
+
+func getTotalGamesApi(accessToken, clientId string, httpClient *http.Client) int {
+	req, err := http.NewRequest("POST", "https://api.igdb.com/v4/games/count", nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	req.Header.Set("Client-ID", clientId)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	req.Header.Set("Accept", "application/json")
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	countResponse := CountResponse{}
+
+	err = json.Unmarshal(body, &countResponse)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return countResponse.Count
 }
 
 func main() {
@@ -119,10 +160,17 @@ func main() {
 	authResponse := getAuthToken(env.TWITCH_CLIENT_ID, env.TWITCH_SECRET)
 	client := &http.Client{}
 
+	dbCount := getTotalGamesDb(db)
+	apiCount := getTotalGamesApi(authResponse.AccessToken, env.TWITCH_CLIENT_ID, client)
+
+	if dbCount == apiCount {
+		return
+	}
+
 	limit := 500
 	offset := 0
 	lastTime := time.Now().Add(-250 * 1e6)
-	total := 291500
+	total := -1
 
 	for offset < total {
 		executionDuration := time.Since(lastTime).Milliseconds()
@@ -132,9 +180,8 @@ func main() {
 			time.Sleep(time.Duration(difference * 1e6))
 		}
 
-        games := getGames(limit, offset, authResponse.AccessToken, env.TWITCH_CLIENT_ID, client)
+		games := getGames(limit, offset, authResponse.AccessToken, env.TWITCH_CLIENT_ID, client)
 		lastTime = time.Now()
-
 
 		_, err = db.NamedExec("INSERT INTO games (api_id, name, slug) VALUES (:id, :name, :slug)", games)
 
