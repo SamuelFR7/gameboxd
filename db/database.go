@@ -11,7 +11,7 @@ import (
 
 var Db *sqlx.DB
 
-func CreateDatabase() error {
+func createDatabase() (*sqlx.DB, error ){
     godotenv.Load()
     var (
         dbpassword = os.Getenv("DATABASE_PASSWORD")
@@ -23,10 +23,26 @@ func CreateDatabase() error {
 
     db, err := sqlx.Connect("postgres", uri)
     if err != nil {
+        return nil, err
+    }
+
+    return db, nil 
+}
+
+func Init() error {
+    db, err := createDatabase()
+    if err != nil {
         return err
     }
 
-    Db = db
+    schema, err := os.ReadFile("schema.sql")
+    if err != nil {
+        return err
+    }
 
+    db.MustExec(string(schema))
+
+    Db = db
+    
     return nil
 }

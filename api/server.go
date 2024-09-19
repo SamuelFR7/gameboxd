@@ -10,7 +10,7 @@ import (
 )
 
 func NewServer() *fiber.App {
-    db.CreateDatabase()
+    db.Init()
 
     app := fiber.New()
     
