@@ -1,8 +1,8 @@
 package api
 
 import (
-	"gameboxd/api/db"
-	"gameboxd/api/handlers"
+	"gameboxd/db"
+	"gameboxd/handlers"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"

@@ -1,4 +1,4 @@
-module gameboxd/api
+module gameboxd 
 
 go 1.23.1
 

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"gameboxd/api/data"
-	"gameboxd/api/services"
+	"gameboxd/data"
+	"gameboxd/services"
 	"log"
 	"math"
 	"net/http"

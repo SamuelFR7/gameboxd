@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"gameboxd/api/data"
+	"gameboxd/data"
 
 	"github.com/gofiber/fiber/v2"
 )

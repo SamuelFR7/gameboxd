@@ -1,6 +1,6 @@
 package data
 
-import "gameboxd/api/db"
+import "gameboxd/db"
 
 type Rating struct {
     Id string `json:"id" db:"id"`

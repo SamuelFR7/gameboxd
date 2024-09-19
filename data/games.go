@@ -1,9 +1,9 @@
 package data
 
 import (
-	"gameboxd/api/db"
-	"gameboxd/api/services"
-	"gameboxd/api/types"
+	"gameboxd/db"
+	"gameboxd/services"
+	"gameboxd/types"
 )
 
 type Game struct {

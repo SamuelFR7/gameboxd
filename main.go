@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gameboxd/api/api"
+	"gameboxd/api"
 )
 
 func main() {
