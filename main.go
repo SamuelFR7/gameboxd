@@ -13,6 +13,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
     "github.com/gofiber/fiber/v2/middleware/logger"
+    "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
@@ -251,6 +252,7 @@ func main() {
 	app := fiber.New()
 
     app.Use(logger.New())
+    app.Use(recover.New())
 
 	api := app.Group("/api")
 
@@ -262,34 +264,31 @@ func main() {
 
 		err := db.Get(&game, "SELECT * FROM games WHERE games.slug = $1", slug)
 		if err != nil {
-			log.Println(err)
-			return c.Status(fiber.StatusInternalServerError).SendString(fiber.ErrInternalServerError.Message)
+            return fiber.ErrNotFound
 		}
 
-		if game.Id == "" {
-			return c.Status(fiber.StatusNotFound).SendString(fiber.ErrNotFound.Message)
-		}
 
 		return c.JSON(game)
 	})
 	v1.Post("/ratings/", func(c *fiber.Ctx) error {
 		type Body struct {
-			GameId string `json:"game_id"`
-			UserId string `json:"user_id"`
-			Rate   int    `json:"rate"`
+            GameId string `json:"gameId" db:"game_id"`
+            UserId string `json:"userId" db:"user_id"`
+            Rate   int    `json:"rate" db:"rate"`
 		}
 		u := new(Body)
 
 		if err := c.BodyParser(u); err != nil {
-			return c.Status(fiber.StatusUnprocessableEntity).SendString(err.Error())
+            return fiber.ErrUnprocessableEntity
 		}
 
-		_, err := db.Exec("INSERT INTO ratings (game_id, user_id, rate) VALUES ($1, $2, $3)", u.GameId, u.UserId, u.Rate)
+        _, err := db.Exec("INSERT INTO ratings (game_id, user_id, rate) VALUES ($1, $2, $3)", u.GameId, u.UserId, u.Rate)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString(fiber.ErrInternalServerError.Message)
+            log.Println(err)
+            return fiber.ErrInternalServerError
 		}
 
-		return c.Status(fiber.StatusCreated).SendString("Ok")
+		return c.SendStatus(fiber.StatusCreated)
 	})
 	v1.Post("/games/import", func(c *fiber.Ctx) error {
         go importGames(env)
