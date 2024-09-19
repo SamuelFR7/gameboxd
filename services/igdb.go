@@ -116,5 +116,4 @@ func GetGames(offset, limit int, accessToken string, httpClient *http.Client) ([
 	}
 
 	return gamesResponse, err
-
 }

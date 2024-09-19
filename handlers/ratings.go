@@ -20,4 +20,3 @@ func HandleCreateRating(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusCreated)
 }
-

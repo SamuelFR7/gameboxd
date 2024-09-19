@@ -65,7 +65,7 @@ func HandleImportGames(c *fiber.Ctx) error {
 		offset := dbCount
 		lastTime := time.Now().Add(-250 * 1e6)
 
-    	for i := 0; i < callsUntilFinish; i++ {
+		for i := 0; i < callsUntilFinish; i++ {
 			executionDuration := time.Since(lastTime).Milliseconds()
 			if executionDuration < 250 {
 				difference := 250 - executionDuration
@@ -75,26 +75,26 @@ func HandleImportGames(c *fiber.Ctx) error {
 
 			games, err := services.GetGames(offset, limit, authResponse.AccessToken, client)
 			if err != nil {
-                return err
+				return err
 			}
 			lastTime = time.Now()
 
-            err = data.CreateMultipleGamesFromIgdb(games)
+			err = data.CreateMultipleGamesFromIgdb(games)
 
 			if err != nil {
 				log.Printf("Stopped at offset %d\n", offset)
-                return err
+				return err
 			}
 
 			offset += 500
 		}
 
-        return nil
+		return nil
 	}
 
-    if (missingGamesQt > 0) {
-        go importGames()
-    }
+	if missingGamesQt > 0 {
+		go importGames()
+	}
 
 	return c.SendStatus(fiber.StatusOK)
 }

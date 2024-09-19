@@ -8,9 +8,15 @@ CREATE TABLE IF NOT EXISTS "games" (
 CREATE TABLE IF NOT EXISTS "users" (
     "id" VARCHAR(255) PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     "email" VARCHAR(255) NOT NULL UNIQUE,
-    "password" VARCHAR(255) NOT NULL
+    "password_hash" VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS "sessions" (
+    "id" VARCHAR(255) PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" VARCHAR(255) NOT NULL REFERENCES "users" ("id"),
+    "expires_at" TIMESTAMP NOT NULL,
+    "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS "profiles" (
     "id" VARCHAR(255) PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),

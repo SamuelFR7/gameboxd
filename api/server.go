@@ -10,21 +10,25 @@ import (
 )
 
 func NewServer() *fiber.App {
-    db.Init()
+	db.Init()
 
-    app := fiber.New()
-    
-    app.Use(logger.New())
-    app.Use(recover.New())
+	app := fiber.New()
 
-    api := app.Group("/api")
+	app.Use(logger.New())
+	app.Use(recover.New())
 
-    v1 := api.Group("/v1")
+	api := app.Group("/api")
 
-    v1.Get("/games", handlers.HandleListGames)
-    v1.Get("/games/:slug", handlers.HandleGetGameBySlug)
-    v1.Post("/games/import", handlers.HandleImportGames)
-    v1.Post("/ratings", handlers.HandleCreateRating)
+	v1 := api.Group("/v1")
 
-    return app
+	v1.Get("/games", handlers.HandleListGames)
+	v1.Get("/games/:slug", handlers.HandleGetGameBySlug)
+	v1.Post("/games/import", handlers.HandleImportGames)
+
+	v1.Post("/ratings", handlers.HandleCreateRating)
+
+	v1.Post("/users/", handlers.HandleCreateUser)
+	v1.Post("/users/sign-in", handlers.SignIn)
+
+	return app
 }
