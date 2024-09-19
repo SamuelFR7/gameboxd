@@ -26,6 +26,11 @@ type AuthResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
+type PaginatedResponse struct {
+    Data interface{} `json:"data"`
+    TotalCount int `json:"total_count"`
+}
+
 type Game struct {
 	Id   int    `json:"id" db:"id"`
 	Name string `json:"name" db:"name"`
@@ -270,6 +275,33 @@ func main() {
 
 		return c.JSON(game)
 	})
+    v1.Get("/games", func(c *fiber.Ctx) error {
+        name := c.Query("name")
+        page := c.QueryInt("page")
+
+        games := []DbGame{}
+
+        limit := 10
+        offset := (page - 1) * limit
+
+        err := db.Select(&games, "SELECT * FROM games WHERE games.name ilike '%' || $1 || '%' OFFSET $2 LIMIT $3", name, offset, limit)
+        if err != nil {
+            log.Println(err)
+            return fiber.ErrInternalServerError
+        }
+
+        var count int
+        err = db.Get(&count, "SELECT count(id) FROM games WHERE games.name ilike '%' || $1 || '%'", name)
+        if err != nil {
+            log.Println(err)
+            return fiber.ErrInternalServerError
+        }
+
+        return c.Status(fiber.StatusOK).JSON(PaginatedResponse{
+            Data: games,
+            TotalCount: count,
+        })
+    })
 	v1.Post("/ratings/", func(c *fiber.Ctx) error {
 		type Body struct {
             GameId string `json:"gameId" db:"game_id"`
