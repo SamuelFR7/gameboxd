@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"fmt"
 	"gameboxd/data"
 	"gameboxd/utils"
-	"os"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -59,15 +57,36 @@ func SignIn(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	var secret = os.Getenv("COOKIE_SECRET")
+	c.Cookie(&fiber.Cookie{
+		HTTPOnly: true,
+		Path:     "/",
+		Name:     utils.SESSION_KEY,
+		Value:    session.Id,
+		MaxAge:   30 * 86400,
+	})
 
-	if secret == "" {
-		secret = "my_secret"
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func SignOut(c *fiber.Ctx) error {
+	sessionId := c.Cookies(utils.SESSION_KEY)
+
+	if sessionId == "" {
+		return fiber.ErrUnauthorized
 	}
 
-	sessionHashed := utils.HashCookie(session.Id, secret)
+	err := data.DestroySession(sessionId)
+	if err != nil {
+		return fiber.ErrInternalServerError
+	}
 
-	c.Response().Header.Add("Set-Cookie", fmt.Sprintf("_session=%s; HttpOnly; Path=/", sessionHashed))
+	c.Cookie(&fiber.Cookie{
+		HTTPOnly: true,
+		Path:     "/",
+		Name:     utils.SESSION_KEY,
+		Value:    "",
+		MaxAge:   0,
+	})
 
 	return c.SendStatus(fiber.StatusOK)
 }

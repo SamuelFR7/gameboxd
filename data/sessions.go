@@ -2,6 +2,7 @@ package data
 
 import (
 	"gameboxd/db"
+	"log"
 	"time"
 )
 
@@ -12,13 +13,13 @@ type Session struct {
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 }
 
-const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30
+const SESSION_EXPIRATION_TIME = time.Hour * 24 * 30
 
 func generateSessionExpiresAt() time.Time {
 	now := time.Now()
-	now.Add(time.Duration(SESSION_EXPIRATION_TIME * 1e6))
+	expiresAt := now.Add(SESSION_EXPIRATION_TIME)
 
-	return now
+	return expiresAt
 }
 
 func CreateSession(userId string) (Session, error) {
@@ -36,4 +37,23 @@ func CreateSession(userId string) (Session, error) {
 	}
 
 	return session, nil
+}
+
+func ValidateSession(sessionId string) (Session, error) {
+	session := Session{}
+	err := db.Db.Get(&session, "SELECT * FROM sessions WHERE sessions.id = $1 AND sessions.expires_at > NOW()", sessionId)
+	if err != nil {
+		return session, err
+	}
+
+	return session, nil
+}
+
+func DestroySession(sessionId string) error {
+	_, err := db.Db.Exec("DELETE FROM sessions WHERE sessions.id = $1", sessionId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
